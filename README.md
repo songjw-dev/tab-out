@@ -152,20 +152,3 @@ git pull
 
 然后在 `chrome://extensions` 页面点击 Tab Out 的刷新按钮。
 
----
-
-## 开发信息
-
-- 项目基于 [zarazhangrui/tab-out](https://github.com/zarazhangrui/tab-out) 二次开发
-- 原作者：Zara
-- 定制开发：JW
-
----
-
-## 许可证
-
-MIT
-
----
-
-**Made with ❤️ by JW**
