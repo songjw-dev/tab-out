@@ -1,91 +1,171 @@
 # Tab Out
 
-**Keep tabs on your tabs.**
+**掌控你的标签页。**
 
-Tab Out is a Chrome extension that replaces your new tab page with a dashboard of everything you have open. Tabs are grouped by domain, with homepages (Gmail, X, LinkedIn, etc.) pulled into their own group. Close tabs with a satisfying swoosh + confetti.
+## 这是什么？
 
-No server. No account. No external API calls. Just a Chrome extension.
+Tab Out 是一个 Chrome 扩展，把你的新标签页变成一个**标签页管理仪表盘**。
+
+所有打开的标签页按域名自动分组展示，支持自定义分类名称、一键关闭、收藏、搜索。
+
+**100% 本地运行**，无需服务器，无需账号，数据不上云。
 
 ---
 
-## Install with a coding agent
+## 解决谁的问题？
 
-Send your coding agent (Claude Code, Codex, etc.) this repo and say **"install this"**:
+### 你是否有这样的困扰？
+
+- 浏览器经常开 **20+ 个标签页**，想找某个页面翻半天？
+- 看了一半的视频、调研到一半的页面，**想关又不敢关**？
+- 重复打开了同一个页面，**浪费内存却不知道**？
+- 公司内部系统（CRM、OA、文档）和外部调研页面混在一起，**分不清哪个是哪个**？
+
+### Tab Out 帮你解决
+
+| 痛点 | 解决方案 |
+|------|----------|
+| 标签页太多，找不到 | 按域名自动分组 + ⌘K 全局搜索 |
+| 想关但怕忘 | 收藏到右侧清单，随时可以重新打开 |
+| 重复页面浪费资源 | 自动检测重复，一键去重 |
+| 分不清各个系统 | 自定义分类名称（如 CRM 系统、TAIE 系统） |
+
+### 适合谁？
+
+- 每天打开 10+ 个标签页的人
+- 需要同时调研多个竞品的人
+- 多个项目并行开发的开发者
+- 任何被标签页管理困扰的人
+
+---
+
+## 功能特性
+
+### 核心功能
+
+- ✅ **按域名分组** — 标签页自动按网站分组，一目了然
+- ✅ **自定义分类名** — 给域名组起中文名（如「CRM 系统」）
+- ✅ **一键关闭** — 关闭整个分组或单个标签页，带音效和动画
+- ✅ **收藏功能** — 把标签页保存到稍后阅读清单
+- ✅ **恢复收藏** — 收藏的标签页可以一键重新打开
+- ✅ **重复检测** — 自动发现重复标签页，显示 ×N 标记
+- ✅ **全局搜索** — ⌘K 快捷键搜索所有标签页标题和网址
+- ✅ **分类筛选** — 顶部标签栏一键筛选某个分类
+
+### 体验细节
+
+- 🎨 **治愈系配色** — 柔和温暖的色调，看着就放松
+- 🔊 **音效反馈** — 关闭标签页时播放 swoosh 音效
+- 🎉 **彩纸动画** — 关闭时有彩纸爆炸效果，给点仪式感
+- 📱 **响应式布局** — 适配不同屏幕尺寸
+- 💾 **本地存储** — 所有数据存在浏览器本地，隐私安全
+
+---
+
+## 安装方式
+
+### 方法一：让 AI 帮你安装（推荐）
+
+如果你使用 Claude Code 或其他 AI 编程助手，直接把这个仓库发给它：
 
 ```
-https://github.com/zarazhangrui/tab-out
+https://github.com/你的用户名/tab-out
 ```
 
-The agent will walk you through it. Takes about 1 minute.
+然后说「帮我安装 Tab Out」，AI 会引导你完成。
 
----
+### 方法二：手动安装
 
-## Features
-
-- **See all your tabs at a glance** on a clean grid, grouped by domain
-- **Homepages group** pulls Gmail inbox, X home, YouTube, LinkedIn, GitHub homepages into one card
-- **Close tabs with style** with swoosh sound + confetti burst
-- **Duplicate detection** flags when you have the same page open twice, with one-click cleanup
-- **Click any tab to jump to it** across windows, no new tab opened
-- **Save for later** bookmark tabs to a checklist before closing them
-- **Localhost grouping** shows port numbers next to each tab so you can tell your vibe coding projects apart
-- **Expandable groups** show the first 8 tabs with a clickable "+N more"
-- **100% local** your data never leaves your machine
-- **Pure Chrome extension** no server, no Node.js, no npm, no setup beyond loading the extension
-
----
-
-## Manual Setup
-
-**1. Clone the repo**
+**1. 克隆仓库**
 
 ```bash
-git clone https://github.com/zarazhangrui/tab-out.git
+git clone https://github.com/你的用户名/tab-out.git
+cd tab-out
 ```
 
-**2. Load the Chrome extension**
+**2. 加载扩展**
 
-1. Open Chrome and go to `chrome://extensions`
-2. Enable **Developer mode** (top-right toggle)
-3. Click **Load unpacked**
-4. Navigate to the `extension/` folder inside the cloned repo and select it
+1. 打开 Chrome，访问 `chrome://extensions`
+2. 右上角开启 **开发者模式**
+3. 点击 **「加载已解压的扩展程序」**
+4. 选择仓库中的 `extension/` 文件夹
 
-**3. Open a new tab**
+**3. 开始使用**
 
-You'll see Tab Out.
+打开新标签页，你会看到 Tab Out 仪表盘。
 
 ---
 
-## How it works
+## 使用指南
 
-```
-You open a new tab
-  -> Tab Out shows your open tabs grouped by domain
-  -> Homepages (Gmail, X, etc.) get their own group at the top
-  -> Click any tab title to jump to it
-  -> Close groups you're done with (swoosh + confetti)
-  -> Save tabs for later before closing them
-```
+### 基本操作
 
-Everything runs inside the Chrome extension. No external server, no API calls, no data sent anywhere. Saved tabs are stored in `chrome.storage.local`.
+1. **查看标签页** — 所有标签页按域名分组显示在左侧
+2. **跳转标签页** — 点击标签页标题直接切换
+3. **关闭标签页** — 点击 ✕ 关闭单个，或点击「关闭全部」
+4. **收藏标签页** — 点击书签图标保存到右侧清单
 
----
+### 进阶功能
 
-## Tech stack
-
-| What | How |
-|------|-----|
-| Extension | Chrome Manifest V3 |
-| Storage | chrome.storage.local |
-| Sound | Web Audio API (synthesized, no files) |
-| Animations | CSS transitions + JS confetti particles |
+5. **自定义名称** — 点击域名组旁的 ✏️ 编辑按钮，输入自定义名称
+6. **搜索标签页** — 按 ⌘K（Mac）或 Ctrl+K（Windows）打开搜索框
+7. **分类筛选** — 点击顶部分类标签，只看某个分类的标签页
+8. **恢复收藏** — 点击右侧收藏清单中的恢复按钮，重新打开标签页
+9. **处理重复** — 重复标签页显示 ×N 标记，底部有「关闭 N 个重复」按钮
 
 ---
 
-## License
+## 技术栈
+
+- **Chrome Extension Manifest V3** — 现代 Chrome 扩展标准
+- **纯前端** — HTML + CSS + JavaScript，无需构建工具
+- **chrome.storage.local** — 本地数据持久化
+- **Web Audio API** — 合成音效
+- **CSS 动画** — 过渡和粒子效果
+
+---
+
+## 文件结构
+
+```
+tab-out/
+├── extension/              # Chrome 扩展代码
+│   ├── manifest.json       # 扩展配置
+│   ├── index.html          # 仪表盘页面
+│   ├── app.js              # 业务逻辑
+│   ├── style.css           # 样式
+│   ├── background.js       # 后台服务
+│   └── icons/              # 图标
+├── README.md               # 本文件
+├── SKILL.md                # AI 助手安装指南
+└── LICENSE                 # MIT 许可证
+```
+
+---
+
+## 更新方式
+
+```bash
+cd tab-out
+git pull
+```
+
+然后在 `chrome://extensions` 页面点击 Tab Out 的刷新按钮。
+
+---
+
+## 开发信息
+
+- 项目基于 [zarazhangrui/tab-out](https://github.com/zarazhangrui/tab-out) 二次开发
+- 原作者：Zara
+- 定制开发：JW
+
+---
+
+## 许可证
 
 MIT
 
 ---
 
-Built by [Zara](https://x.com/zarazhangrui)
+**Made with ❤️ by JW**

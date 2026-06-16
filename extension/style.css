@@ -5,19 +5,20 @@
    ============================================================ */
 
 :root {
-  --ink: #1a1613;
-  --paper: #f8f5f0;
-  --warm-gray: #e8e2da;
-  --muted: #9a918a;
-  --accent-amber: #c8713a;
-  --accent-sage: #5a7a62;
-  --accent-slate: #5a6b7a;
-  --accent-rose: #b35a5a;
-  --status-active: #3d7a4a;
-  --status-cooling: #b8892e;
-  --status-abandoned: #b35a5a;
-  --card-bg: #fffdf9;
-  --shadow: rgba(26, 22, 19, 0.06);
+  /* 治愈系配色 - 柔和温暖的色调 */
+  --ink: #4a4543;
+  --paper: #faf8f5;
+  --warm-gray: #e8e4df;
+  --muted: #a8a09a;
+  --accent-amber: #e8a87c;
+  --accent-sage: #85b79d;
+  --accent-slate: #7c9eb2;
+  --accent-rose: #d4a5a5;
+  --status-active: #85b79d;
+  --status-cooling: #e8a87c;
+  --status-abandoned: #d4a5a5;
+  --card-bg: #ffffff;
+  --shadow: rgba(74, 69, 67, 0.08);
 }
 
 * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -397,8 +398,19 @@ header {
 
 /* Duplicate badge */
 .chip-dupe-badge {
-  color: var(--accent-amber);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 24px;
+  height: 20px;
+  padding: 0 6px;
+  border-radius: 10px;
+  font-size: 11px;
   font-weight: 600;
+  color: var(--accent-amber);
+  background: rgba(200, 113, 58, 0.12);
+  border: 1px solid rgba(200, 113, 58, 0.25);
+  flex-shrink: 0;
 }
 
 /* Duplicate border highlight */
@@ -449,6 +461,24 @@ header {
 .chip-close:hover {
   color: var(--status-abandoned);
   background: rgba(179, 90, 90, 0.08);
+}
+
+/* Dedup button — "keep 1" */
+.chip-dedup {
+  color: var(--muted);
+}
+
+.chip-dedup:hover {
+  color: var(--accent-amber);
+  background: rgba(200, 113, 58, 0.08);
+}
+
+/* Action label text next to icon (for duplicate actions) */
+.chip-action-label {
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.2px;
+  margin-left: 2px;
 }
 
 .page-chip.clickable {
@@ -1035,6 +1065,29 @@ footer { animation: fadeUp 0.5s ease 0.65s both; }
   color: var(--status-abandoned);
 }
 
+/* Restore (↗) button — reopen tab and remove from saved */
+.deferred-restore {
+  background: none;
+  border: none;
+  color: var(--muted);
+  cursor: pointer;
+  padding: 2px;
+  opacity: 0.3;
+  transition: opacity 0.15s, color 0.15s;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+.deferred-restore svg {
+  width: 14px;
+  height: 14px;
+}
+
+.deferred-restore:hover {
+  opacity: 1;
+  color: var(--accent-sage);
+}
+
 /* Slide-out animation for items being removed */
 .deferred-item.removing {
   opacity: 0;
@@ -1155,4 +1208,362 @@ footer { animation: fadeUp 0.5s ease 0.65s both; }
   color: var(--muted);
   opacity: 0.6;
   flex-shrink: 0;
+}
+
+
+/* ================================================================
+   SEARCH BAR
+   Full-width search input with icon and keyboard shortcut hint.
+   Sits between the header and the dashboard columns.
+   ================================================================ */
+
+.search-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 16px;
+  padding: 0 16px;
+  background: var(--card-bg);
+  border: 1.5px solid var(--warm-gray);
+  border-radius: 10px;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  animation: fadeUp 0.4s ease 0.15s both;
+}
+
+.search-bar:focus-within {
+  border-color: var(--accent-amber);
+  box-shadow: 0 0 0 3px rgba(200, 113, 58, 0.08);
+}
+
+.search-icon {
+  width: 18px;
+  height: 18px;
+  color: var(--muted);
+  flex-shrink: 0;
+  opacity: 0.6;
+  transition: opacity 0.2s;
+}
+
+.search-bar:focus-within .search-icon {
+  opacity: 1;
+  color: var(--accent-amber);
+}
+
+.search-bar input {
+  flex: 1;
+  border: none;
+  outline: none;
+  background: transparent;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 14px;
+  color: var(--ink);
+  padding: 12px 0;
+  min-width: 0;
+}
+
+.search-bar input::placeholder {
+  color: var(--muted);
+  opacity: 0.7;
+}
+
+.search-shortcut {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.search-shortcut span {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--muted);
+  background: rgba(154, 145, 138, 0.1);
+  padding: 3px 8px;
+  border-radius: 4px;
+  border: 1px solid rgba(154, 145, 138, 0.15);
+  letter-spacing: 0.3px;
+  opacity: 0.7;
+}
+
+.search-clear {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border: none;
+  background: rgba(154, 145, 138, 0.1);
+  border-radius: 50%;
+  cursor: pointer;
+  color: var(--muted);
+  transition: background 0.15s, color 0.15s;
+  flex-shrink: 0;
+  padding: 0;
+}
+
+.search-clear svg {
+  width: 14px;
+  height: 14px;
+}
+
+.search-clear:hover {
+  background: rgba(179, 90, 90, 0.1);
+  color: var(--status-abandoned);
+}
+
+
+/* ================================================================
+   SEARCH HIGHLIGHT
+   <mark> tags wrapped around matching text in search results.
+   ================================================================ */
+
+mark.search-highlight {
+  background: rgba(200, 113, 58, 0.18);
+  color: var(--ink);
+  border-radius: 2px;
+  padding: 0 2px;
+  font-weight: 500;
+}
+
+
+/* ================================================================
+   SEARCH EMPTY STATE
+   Shown when no tabs match the search query.
+   ================================================================ */
+
+.search-empty-state {
+  column-span: all;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 48px 24px;
+  text-align: center;
+  font-size: 14px;
+  color: var(--muted);
+  animation: fadeUp 0.3s ease both;
+}
+
+.search-empty-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: rgba(154, 145, 138, 0.08);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.search-empty-icon svg {
+  width: 20px;
+  height: 20px;
+  color: var(--muted);
+  opacity: 0.6;
+}
+
+
+/* ================================================================
+   FILTER TAGS
+   Horizontal row of clickable category chips for one-click filtering.
+   ================================================================ */
+
+.filter-tags {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 20px;
+  padding: 0 2px;
+  overflow-x: auto;
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE/Edge */
+  animation: fadeUp 0.4s ease 0.2s both;
+}
+
+.filter-tags::-webkit-scrollbar {
+  display: none; /* Chrome/Safari */
+}
+
+.filter-tag {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--muted);
+  background: var(--card-bg);
+  border: 1px solid var(--warm-gray);
+  border-radius: 20px;
+  padding: 5px 14px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.2s;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  flex-shrink: 0;
+}
+
+.filter-tag:hover {
+  border-color: var(--accent-amber);
+  color: var(--ink);
+  background: rgba(200, 113, 58, 0.04);
+}
+
+.filter-tag.active {
+  background: var(--ink);
+  color: var(--paper);
+  border-color: var(--ink);
+}
+
+.filter-tag-custom {
+  /* Subtle indicator that this group has a custom name */
+  border-style: dashed;
+}
+
+.filter-tag-custom.active {
+  border-style: solid;
+}
+
+.filter-count {
+  font-size: 10px;
+  opacity: 0.6;
+  font-weight: 400;
+}
+
+
+/* ================================================================
+   DOMAIN NAME DISPLAY — Custom name + subtitle + edit button
+   ================================================================ */
+
+.domain-name-display {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+  flex: 1;
+}
+
+.domain-name-display .mission-name {
+  font-weight: 600;
+  font-size: 15px;
+  color: var(--ink);
+  letter-spacing: -0.2px;
+  line-height: 1.3;
+}
+
+.domain-subtitle {
+  font-size: 11px;
+  color: var(--muted);
+  opacity: 0.7;
+  font-weight: 400;
+  letter-spacing: 0.2px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+
+/* ---- Edit button (pencil icon) ---- */
+
+.edit-domain-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border: none;
+  background: transparent;
+  border-radius: 6px;
+  cursor: pointer;
+  color: var(--muted);
+  opacity: 0;
+  transition: opacity 0.2s, background 0.15s, color 0.15s;
+  flex-shrink: 0;
+  padding: 0;
+}
+
+.edit-domain-btn svg {
+  width: 14px;
+  height: 14px;
+}
+
+/* Show edit button on card hover */
+.domain-card:hover .edit-domain-btn {
+  opacity: 0.5;
+}
+
+.edit-domain-btn:hover {
+  opacity: 1 !important;
+  background: rgba(200, 113, 58, 0.08);
+  color: var(--accent-amber);
+}
+
+
+/* ---- Inline edit container ---- */
+
+.domain-name-edit-container {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex: 1;
+  min-width: 0;
+}
+
+.domain-name-input {
+  flex: 1;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ink);
+  background: var(--card-bg);
+  border: 1.5px solid var(--accent-amber);
+  border-radius: 6px;
+  padding: 4px 10px;
+  outline: none;
+  min-width: 0;
+  box-shadow: 0 0 0 3px rgba(200, 113, 58, 0.08);
+}
+
+.domain-name-input::placeholder {
+  color: var(--muted);
+  font-weight: 400;
+  opacity: 0.6;
+}
+
+.domain-name-save,
+.domain-name-cancel {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  padding: 0;
+  flex-shrink: 0;
+  transition: background 0.15s, color 0.15s;
+}
+
+.domain-name-save {
+  background: rgba(90, 122, 98, 0.1);
+  color: var(--accent-sage);
+}
+
+.domain-name-save:hover {
+  background: rgba(90, 122, 98, 0.2);
+}
+
+.domain-name-cancel {
+  background: rgba(154, 145, 138, 0.1);
+  color: var(--muted);
+}
+
+.domain-name-cancel:hover {
+  background: rgba(179, 90, 90, 0.1);
+  color: var(--status-abandoned);
+}
+
+.domain-name-save svg,
+.domain-name-cancel svg {
+  width: 14px;
+  height: 14px;
 }

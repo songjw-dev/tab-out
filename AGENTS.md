@@ -1,29 +1,31 @@
-# AGENTS.md -- Tab Out: Setup & Onboarding Guide for Coding Agents
+# AGENTS.md -- Tab Out：安装引导指南
 
-You're installing **Tab Out** for the user. Your job is not just to set it up -- it's to get them excited about using it.
-
----
-
-## Step 0 -- Introduce the product
-
-Before doing anything technical, tell the user what they're about to get:
-
-> **Tab Out** replaces your new tab page with a clean dashboard of everything you have open, grouped by domain.
->
-> Here's what makes it great:
-> - **See all your open tabs at a glance** grouped by domain on a grid
-> - **Homepages group** pulls Gmail, X, LinkedIn, YouTube, GitHub homepages into one card for easy cleanup
-> - **Close tabs with style** satisfying swoosh sound + confetti burst
-> - **Duplicate detection** flags when you have the same page open twice
-> - **Click any tab title to jump to it** even across different Chrome windows
-> - **Save for later** bookmark individual tabs to a checklist before closing them
-> - **100% local** no server, no accounts, no data sent anywhere
->
-> It's just a Chrome extension. Setup takes about 1 minute.
+你正在为用户安装 **Tab Out**。你的工作不仅仅是设置好它——还要让他们感到兴奋。
 
 ---
 
-## Step 1 -- Clone the repo
+## 第 0 步 -- 介绍产品
+
+在做任何技术操作之前，先告诉用户他们即将获得什么：
+
+> **Tab Out** 用仪表盘替换你的新标签页，按域名分组展示所有打开的标签页。
+>
+> 核心亮点：
+> - **一览所有标签页** — 按域名分组的网格布局
+> - **首页分组** — Gmail、X、YouTube 等首页归入同一卡片
+> - **关闭有仪式感** — swoosh 音效 + 彩纸动画
+> - **重复检测** — 发现重复打开的页面，一键去重
+> - **点击跳转** — 点击标题直接切换，跨窗口也行
+> - **收藏功能** — 收藏到清单，稍后可以重新打开或归档
+> - **自定义分类名称** — 给域名组起中文名
+> - **全局搜索** — `⌘K` 快捷键搜索所有标签页
+> - **100% 本地** — 无服务器、无账号、数据不上云
+>
+> 纯 Chrome 扩展，安装只需 1 分钟。
+
+---
+
+## 第 1 步 -- 克隆仓库
 
 ```bash
 git clone https://github.com/zarazhangrui/tab-out.git
@@ -32,65 +34,69 @@ cd tab-out
 
 ---
 
-## Step 2 -- Install the Chrome extension
+## 第 2 步 -- 安装 Chrome 扩展
 
-This is the one step that requires manual action from the user. Make it as easy as possible.
+这是唯一需要用户手动操作的步骤。尽量让它简单。
 
-**First**, print the full path to the `extension/` folder:
+**首先**，打印 `extension/` 文件夹的完整路径：
 ```bash
-echo "Extension folder: $(cd extension && pwd)"
+echo "扩展文件夹路径: $(cd extension && pwd)"
 ```
 
-**Then**, copy the `extension/` folder path to their clipboard:
-- macOS: `cd extension && pwd | pbcopy && echo "Path copied to clipboard"`
-- Linux: `cd extension && pwd | xclip -selection clipboard 2>/dev/null || echo "Path: $(pwd)"`
+**然后**，将路径复制到剪贴板：
+- macOS: `cd extension && pwd | pbcopy && echo "路径已复制到剪贴板"`
+- Linux: `cd extension && pwd | xclip -selection clipboard 2>/dev/null || echo "路径: $(pwd)"`
 - Windows: `cd extension && echo %CD% | clip`
 
-**Then**, open the extensions page:
+**然后**，打开扩展页面：
 ```bash
 open "chrome://extensions"
 ```
 
-**Then**, walk the user through it step by step:
+**然后**，一步步引导用户：
 
-> I've copied the extension folder path to your clipboard. Now:
+> 我已经把扩展文件夹路径复制到你的剪贴板了。现在：
 >
-> 1. You should see Chrome's extensions page. In the **top-right corner**, toggle on **Developer mode** (it's a switch).
-> 2. Once Developer mode is on, you'll see a button called **"Load unpacked"** appear in the top-left. Click it.
-> 3. A file picker will open. **Press Cmd+Shift+G** (Mac) or **Ctrl+L** (Windows/Linux) to open the "Go to folder" bar, then **paste** the path I copied (Cmd+V / Ctrl+V) and press Enter.
-> 4. Click **"Select"** or **"Open"** and the extension will install.
+> 1. 你应该能看到 Chrome 的扩展页面。在**右上角**打开**开发者模式**开关。
+> 2. 打开后，左上角会出现**"加载已解压的扩展程序"**按钮，点击它。
+> 3. 文件选择器打开后，按 **Cmd+Shift+G**（Mac）或 **Ctrl+L**（Windows/Linux）打开"前往文件夹"栏，然后**粘贴**我复制的路径（Cmd+V / Ctrl+V），按回车。
+> 4. 点击**"选择"**或**"打开"**，扩展就安装好了。
 >
-> You should see "Tab Out" appear in your extensions list.
+> 你应该能在扩展列表中看到 "Tab Out"。
 
-**Also**, open the file browser directly to the extension folder as a fallback:
+**同时**，用文件浏览器打开扩展文件夹作为备用方案：
 - macOS: `open extension/`
 - Linux: `xdg-open extension/`
 - Windows: `explorer extension\\`
 
 ---
 
-## Step 3 -- Show them around
+## 第 3 步 -- 展示功能
 
-Once the extension is loaded:
+扩展加载完成后：
 
-> You're all set! Open a **new tab** and you'll see Tab Out.
+> 安装完成！打开一个**新标签页**就能看到 Tab Out。
 >
-> Here's how it works:
-> 1. **Your open tabs are grouped by domain** in a grid layout.
-> 2. **Homepages** (Gmail inbox, X home, YouTube, etc.) are in their own group at the top.
-> 3. **Click any tab title** to jump directly to that tab.
-> 4. **Click the X** next to any tab to close just that one (with swoosh + confetti).
-> 5. **Click "Close all N tabs"** on a group to close the whole thing.
-> 6. **Duplicate tabs** are flagged with an amber "(2x)" badge. Click "Close duplicates" to keep one copy.
-> 7. **Save a tab for later** by clicking the bookmark icon before closing it. Saved tabs appear in the sidebar.
+> 使用方法：
+> 1. **所有标签页按域名分组**显示在网格中。
+> 2. **首页**（Gmail 收件箱、X 首页等）在顶部单独分组。
+> 3. **点击任意标签页标题**直接跳转。
+> 4. **点击 X 按钮**关闭单个标签页（带音效和动画）。
+> 5. **点击"关闭全部 N 个标签页"**关闭整个分组。
+> 6. **重复标签页**会用橙色 "(2x)" 标记，点击"关闭重复"保留一份。
+> 7. **点击收藏按钮**收藏标签页，收藏的页面出现在右侧清单。
+> 8. **点击恢复按钮**重新打开收藏的标签页。
+> 9. **点击编辑按钮**给域名组起自定义中文名。
+> 10. **按 ⌘K** 打开搜索框，快速查找标签页。
 >
-> That's it! No server to run, no config files. Everything works right away.
+> 就这么简单！无需服务器，无需配置。开箱即用。
 
 ---
 
-## Key Facts
+## 关键信息
 
-- Tab Out is a pure Chrome extension. No server, no Node.js, no npm.
-- Saved tabs are stored in `chrome.storage.local` (persists across sessions).
-- 100% local. No data is sent to any external service.
-- To update: `cd tab-out && git pull`, then reload the extension in `chrome://extensions`.
+- Tab Out 是纯 Chrome 扩展，无需服务器、Node.js、npm。
+- 收藏的标签页存储在 `chrome.storage.local`（跨会话持久化）。
+- 自定义分类名称也存储在 `chrome.storage.local`。
+- 100% 本地，数据不会发送到任何外部服务。
+- 更新方式：`cd tab-out && git pull`，然后在 `chrome://extensions` 中重新加载扩展。

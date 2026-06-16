@@ -285,6 +285,78 @@ async function dismissSavedTab(id) {
 
 
 /* ----------------------------------------------------------------
+   CUSTOM DOMAIN NAMES — chrome.storage.local
+
+   Stores user-defined Chinese (or any language) names for domain groups.
+   Data shape stored under the "domainNames" key:
+   {
+     "crm.company.com": "CRM系统",
+     "taie.company.com": "TAIE系统",
+     "youtube.com": "视频学习",
+     ...
+   }
+   ---------------------------------------------------------------- */
+
+// In-memory cache to avoid reading storage on every render
+let domainNamesCache = {};
+
+/**
+ * getDomainNames()
+ *
+ * Returns the full map of domain → custom name from chrome.storage.local.
+ * Also updates the in-memory cache.
+ */
+async function getDomainNames() {
+  const { domainNames = {} } = await chrome.storage.local.get('domainNames');
+  domainNamesCache = domainNames;
+  return domainNames;
+}
+
+/**
+ * setDomainName(domain, name)
+ *
+ * Sets or clears a custom name for a domain.
+ * Pass empty string or null to remove the custom name.
+ */
+async function setDomainName(domain, name) {
+  const domainNames = await getDomainNames();
+  if (name && name.trim()) {
+    domainNames[domain] = name.trim();
+  } else {
+    delete domainNames[domain];
+  }
+  await chrome.storage.local.set({ domainNames });
+  domainNamesCache = domainNames;
+}
+
+/**
+ * getDisplayName(group)
+ *
+ * Returns the display name for a domain group.
+ * Priority: custom name > friendly domain name > raw hostname.
+ */
+function getDisplayName(group) {
+  if (group.domain === '__landing-pages__') return '首页';
+  if (group.label) return group.label;
+  if (domainNamesCache[group.domain]) return domainNamesCache[group.domain];
+  return friendlyDomain(group.domain);
+}
+
+/**
+ * getDisplaySubtitle(group)
+ *
+ * Returns a subtitle to show under the custom name (the raw domain).
+ * Only shown when a custom name exists, to help users identify the domain.
+ */
+function getDisplaySubtitle(group) {
+  if (group.domain === '__landing-pages__') return '';
+  if (group.label) return group.domain;
+  if (domainNamesCache[group.domain]) return group.domain;
+  return '';
+}
+
+
+/* ----------------------------------------------------------------
    UI HELPERS
    ---------------------------------------------------------------- */
 
@@ -346,14 +418,14 @@ function playCloseSound() {
  */
 function shootConfetti(x, y) {
   const colors = [
-    '#c8713a', // amber
-    '#e8a070', // amber light
-    '#5a7a62', // sage
-    '#8aaa92', // sage light
-    '#5a6b7a', // slate
-    '#8a9baa', // slate light
-    '#d4b896', // warm paper
-    '#b35a5a', // rose
+    '#e8a87c', // 柔和桃色
+    '#f0c4a8', // 浅桃色
+    '#85b79d', // 薄荷绿
+    '#a8d4bc', // 浅薄荷绿
+    '#7c9eb2', // 柔和蓝
+    '#a8c4d4', // 浅蓝色
+    '#f5e6d3', // 暖奶油色
+    '#d4a5a5', // 柔和粉
   ];
 
   const particleCount = 17;
@@ -461,13 +533,13 @@ function checkAndShowEmptyState() {
           <path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" />
         </svg>
       </div>
-      <div class="empty-title">Inbox zero, but for tabs.</div>
-      <div class="empty-subtitle">You're free.</div>
+      <div class="empty-title">标签页清零，完美！</div>
+      <div class="empty-subtitle">你自由了。</div>
     </div>
   `;
 
   const countEl = document.getElementById('openTabsSectionCount');
-  if (countEl) countEl.textContent = '0 domains';
+  if (countEl) countEl.textContent = '0 个分类';
 }
 
 /**
@@ -484,11 +556,11 @@ function timeAgo(dateStr) {
   const diffHours = Math.floor((now - then) / 3600000);
   const diffDays  = Math.floor((now - then) / 86400000);
 
-  if (diffMins < 1)   return 'just now';
-  if (diffMins < 60)  return diffMins + ' min ago';
-  if (diffHours < 24) return diffHours + ' hr' + (diffHours !== 1 ? 's' : '') + ' ago';
-  if (diffDays === 1) return 'yesterday';
-  return diffDays + ' days ago';
+  if (diffMins < 1)   return '刚刚';
+  if (diffMins < 60)  return diffMins + ' 分钟前';
+  if (diffHours < 24) return diffHours + ' 小时前';
+  if (diffDays === 1) return '昨天';
+  return diffDays + ' 天前';
 }
 
 /**
@@ -496,16 +568,16 @@ function timeAgo(dateStr) {
  */
 function getGreeting() {
   const hour = new Date().getHours();
-  if (hour < 12) return 'Good morning';
-  if (hour < 17) return 'Good afternoon';
-  return 'Good evening';
+  if (hour < 12) return '早上好';
+  if (hour < 17) return '下午好';
+  return '晚上好';
 }
 
 /**
  * getDateDisplay() — "Friday, April 4, 2026"
  */
 function getDateDisplay() {
-  return new Date().toLocaleDateString('en-US', {
+  return new Date().toLocaleDateString('zh-CN', {
     weekday: 'long',
     year:    'numeric',
     month:   'long',
@@ -761,21 +833,23 @@ function buildOverflowChips(hiddenTabs, urlCounts = {}) {
   const hiddenChips = hiddenTabs.map(tab => {
     const label    = cleanTitle(smartTitle(stripTitleNoise(tab.title || ''), tab.url), '');
     const count    = urlCounts[tab.url] || 1;
-    const dupeTag  = count > 1 ? ` <span class="chip-dupe-badge">(${count}x)</span>` : '';
-    const chipClass = count > 1 ? ' chip-has-dupes' : '';
+    const isDupe   = count > 1;
+    const dupeTag  = isDupe ? `<span class="chip-dupe-badge">×${count}</span>` : '';
+    const chipClass = isDupe ? ' chip-has-dupes' : '';
     const safeUrl   = (tab.url || '').replace(/"/g, '&quot;');
     const safeTitle = label.replace(/"/g, '&quot;');
     let domain = '';
     try { domain = new URL(tab.url).hostname; } catch {}
     const faviconUrl = domain ? `https://www.google.com/s2/favicons?domain=${domain}&sz=16` : '';
+
     return `<div class="page-chip clickable${chipClass}" data-action="focus-tab" data-tab-url="${safeUrl}" title="${safeTitle}">
       ${faviconUrl ? `<img class="chip-favicon" src="${faviconUrl}" alt="" onerror="this.style.display='none'">` : ''}
       <span class="chip-text">${label}</span>${dupeTag}
       <div class="chip-actions">
-        <button class="chip-action chip-save" data-action="defer-single-tab" data-tab-url="${safeUrl}" data-tab-title="${safeTitle}" title="Save for later">
+        <button class="chip-action chip-save" data-action="defer-single-tab" data-tab-url="${safeUrl}" data-tab-title="${safeTitle}" title="收藏">
           <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M17.593 3.322c1.1.128 1.907 1.077 1.907 2.185V21L12 17.25 4.5 21V5.507c0-1.108.806-2.057 1.907-2.185a48.507 48.507 0 0 1 11.186 0Z" /></svg>
         </button>
-        <button class="chip-action chip-close" data-action="close-single-tab" data-tab-url="${safeUrl}" title="Close this tab">
+        <button class="chip-action chip-close" data-action="close-single-tab" data-tab-url="${safeUrl}" title="关闭此标签页">
           <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" /></svg>
         </button>
       </div>
@@ -785,7 +859,7 @@ function buildOverflowChips(hiddenTabs, urlCounts = {}) {
   return `
     <div class="page-chips-overflow" style="display:none">${hiddenChips}</div>
     <div class="page-chip page-chip-overflow clickable" data-action="expand-chips">
-      <span class="chip-text">+${hiddenTabs.length} more</span>
+      <span class="chip-text">还有 ${hiddenTabs.length} 个</span>
     </div>`;
 }
 
@@ -803,7 +877,6 @@ function buildOverflowChips(hiddenTabs, urlCounts = {}) {
 function renderDomainCard(group) {
   const tabs      = group.tabs || [];
   const tabCount  = tabs.length;
-  const isLanding = group.domain === '__landing-pages__';
   const stableId  = 'domain-' + group.domain.replace(/[^a-z0-9]/g, '-');
 
   // Count duplicates (exact URL match)
@@ -815,12 +888,12 @@ function renderDomainCard(group) {
 
   const tabBadge = `<span class="open-tabs-badge">
     ${ICONS.tabs}
-    ${tabCount} tab${tabCount !== 1 ? 's' : ''} open
+    ${tabCount} 个标签页
   </span>`;
 
   const dupeBadge = hasDupes
-    ? `<span class="open-tabs-badge" style="color:var(--accent-amber);background:rgba(200,113,58,0.08);">
-        ${totalExtras} duplicate${totalExtras !== 1 ? 's' : ''}
+    ? `<span class="open-tabs-badge" style="color:var(--accent-amber);background:rgba(232,168,124,0.12);">
+        ${totalExtras} 个重复
       </span>`
     : '';
 
@@ -842,21 +915,23 @@ function renderDomainCard(group) {
       if (parsed.hostname === 'localhost' && parsed.port) label = `${parsed.port} ${label}`;
     } catch {}
     const count    = urlCounts[tab.url];
-    const dupeTag  = count > 1 ? ` <span class="chip-dupe-badge">(${count}x)</span>` : '';
-    const chipClass = count > 1 ? ' chip-has-dupes' : '';
+    const isDupe   = count > 1;
+    const dupeTag  = isDupe ? `<span class="chip-dupe-badge">×${count}</span>` : '';
+    const chipClass = isDupe ? ' chip-has-dupes' : '';
     const safeUrl   = (tab.url || '').replace(/"/g, '&quot;');
     const safeTitle = label.replace(/"/g, '&quot;');
     let domain = '';
     try { domain = new URL(tab.url).hostname; } catch {}
     const faviconUrl = domain ? `https://www.google.com/s2/favicons?domain=${domain}&sz=16` : '';
+
     return `<div class="page-chip clickable${chipClass}" data-action="focus-tab" data-tab-url="${safeUrl}" title="${safeTitle}">
       ${faviconUrl ? `<img class="chip-favicon" src="${faviconUrl}" alt="" onerror="this.style.display='none'">` : ''}
       <span class="chip-text">${label}</span>${dupeTag}
       <div class="chip-actions">
-        <button class="chip-action chip-save" data-action="defer-single-tab" data-tab-url="${safeUrl}" data-tab-title="${safeTitle}" title="Save for later">
+        <button class="chip-action chip-save" data-action="defer-single-tab" data-tab-url="${safeUrl}" data-tab-title="${safeTitle}" title="收藏">
           <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M17.593 3.322c1.1.128 1.907 1.077 1.907 2.185V21L12 17.25 4.5 21V5.507c0-1.108.806-2.057 1.907-2.185a48.507 48.507 0 0 1 11.186 0Z" /></svg>
         </button>
-        <button class="chip-action chip-close" data-action="close-single-tab" data-tab-url="${safeUrl}" title="Close this tab">
+        <button class="chip-action chip-close" data-action="close-single-tab" data-tab-url="${safeUrl}" title="关闭此标签页">
           <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" /></svg>
         </button>
       </div>
@@ -866,23 +941,38 @@ function renderDomainCard(group) {
   let actionsHtml = `
     <button class="action-btn close-tabs" data-action="close-domain-tabs" data-domain-id="${stableId}">
       ${ICONS.close}
-      Close all ${tabCount} tab${tabCount !== 1 ? 's' : ''}
+      关闭全部 ${tabCount} 个标签页
     </button>`;
 
   if (hasDupes) {
     const dupeUrlsEncoded = dupeUrls.map(([url]) => encodeURIComponent(url)).join(',');
     actionsHtml += `
       <button class="action-btn" data-action="dedup-keep-one" data-dupe-urls="${dupeUrlsEncoded}">
-        Close ${totalExtras} duplicate${totalExtras !== 1 ? 's' : ''}
+        关闭 ${totalExtras} 个重复
       </button>`;
   }
 
+  const displayName = getDisplayName(group);
+  const subtitle = getDisplaySubtitle(group);
+
+  const nameHtml = subtitle
+    ? `<span class="domain-name-display">
+         <span class="mission-name">${displayName}</span>
+         <span class="domain-subtitle">${subtitle}</span>
+       </span>`
+    : `<span class="domain-name-display">
+         <span class="mission-name">${displayName}</span>
+       </span>`;
+
   return `
-    <div class="mission-card domain-card ${hasDupes ? 'has-amber-bar' : 'has-neutral-bar'}" data-domain-id="${stableId}">
+    <div class="mission-card domain-card ${hasDupes ? 'has-amber-bar' : 'has-neutral-bar'}" data-domain-id="${stableId}" data-domain="${group.domain}">
       <div class="status-bar"></div>
       <div class="mission-content">
         <div class="mission-top">
-          <span class="mission-name">${isLanding ? 'Homepages' : (group.label || friendlyDomain(group.domain))}</span>
+          ${nameHtml}
+          <button class="edit-domain-btn" data-action="edit-domain-name" data-domain="${group.domain}" title="修改分类名称">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0 1 15.75 21H5.25A2.25 2.25 0 0 1 3 18.75V8.25A2.25 2.25 0 0 1 5.25 6H10" /></svg>
+          </button>
           ${tabBadge}
           ${dupeBadge}
         </div>
@@ -891,7 +981,7 @@ function renderDomainCard(group) {
       </div>
       <div class="mission-meta">
         <div class="mission-page-count">${tabCount}</div>
-        <div class="mission-page-label">tabs</div>
+        <div class="mission-page-label">个标签</div>
       </div>
     </div>`;
 }
@@ -932,7 +1022,7 @@ async function renderDeferredColumn() {
 
     // Render active checklist items
     if (active.length > 0) {
-      countEl.textContent = `${active.length} item${active.length !== 1 ? 's' : ''}`;
+      countEl.textContent = `${active.length} 个收藏`;
       list.innerHTML = active.map(item => renderDeferredItem(item)).join('');
       list.style.display = 'block';
       empty.style.display = 'none';
@@ -981,7 +1071,10 @@ function renderDeferredItem(item) {
           <span>${ago}</span>
         </div>
       </div>
-      <button class="deferred-dismiss" data-action="dismiss-deferred" data-deferred-id="${item.id}" title="Dismiss">
+      <button class="deferred-restore" data-action="restore-deferred" data-deferred-id="${item.id}" data-deferred-url="${(item.url || '').replace(/"/g, '&quot;')}" title="重新打开并移除收藏">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M13.5 6H5.25A2.25 2.25 0 0 0 3 8.25v10.5A2.25 2.25 0 0 0 5.25 21h10.5A2.25 2.25 0 0 0 18 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25" /></svg>
+      </button>
+      <button class="deferred-dismiss" data-action="dismiss-deferred" data-deferred-id="${item.id}" title="移除">
         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" /></svg>
       </button>
     </div>`;
@@ -1020,6 +1113,9 @@ function renderArchiveItem(item) {
  * 6. Renders the "Saved for Later" checklist
  */
 async function renderStaticDashboard() {
+  // --- Load custom domain names first ---
+  await getDomainNames();
+
   // --- Header ---
   const greetingEl = document.getElementById('greeting');
   const dateEl     = document.getElementById('dateDisplay');
@@ -1148,13 +1244,29 @@ async function renderStaticDashboard() {
   const openTabsSectionCount = document.getElementById('openTabsSectionCount');
   const openTabsSectionTitle = document.getElementById('openTabsSectionTitle');
 
+  // --- Show search bar when tabs exist ---
+  const searchBar = document.getElementById('searchBar');
+  if (domainGroups.length > 0) {
+    if (searchBar) searchBar.style.display = 'flex';
+  } else {
+    if (searchBar) searchBar.style.display = 'none';
+  }
+
   if (domainGroups.length > 0 && openTabsSection) {
-    if (openTabsSectionTitle) openTabsSectionTitle.textContent = 'Open tabs';
-    openTabsSectionCount.innerHTML = `${domainGroups.length} domain${domainGroups.length !== 1 ? 's' : ''} &nbsp;&middot;&nbsp; <button class="action-btn close-tabs" data-action="close-all-open-tabs" style="font-size:11px;padding:3px 10px;">${ICONS.close} Close all ${realTabs.length} tabs</button>`;
+    if (openTabsSectionTitle) openTabsSectionTitle.textContent = '打开的标签页';
+    openTabsSectionCount.innerHTML = `${domainGroups.length} 个分类 &nbsp;&middot;&nbsp; <button class="action-btn close-tabs" data-action="close-all-open-tabs" style="font-size:11px;padding:3px 10px;">${ICONS.close} 关闭全部 ${realTabs.length} 个标签页</button>`;
     openTabsMissionsEl.innerHTML = domainGroups.map(g => renderDomainCard(g)).join('');
     openTabsSection.style.display = 'block';
+
+    // --- Render filter tags ---
+    renderFilterTags();
+
+    // --- Apply any active search filter ---
+    applySearchFilter();
   } else if (openTabsSection) {
     openTabsSection.style.display = 'none';
+    const filterTags = document.getElementById('filterTags');
+    if (filterTags) filterTags.style.display = 'none';
   }
 
   // --- Footer stats ---
@@ -1188,6 +1300,14 @@ document.addEventListener('click', async (e) => {
 
   const action = actionEl.dataset.action;
 
+  // ---- Edit domain name ----
+  if (action === 'edit-domain-name') {
+    e.stopPropagation();
+    const domain = actionEl.dataset.domain;
+    if (domain) startEditingDomainName(domain, actionEl);
+    return;
+  }
+
   // ---- Close duplicate Tab Out tabs ----
   if (action === 'close-tabout-dupes') {
     await closeTabOutDupes();
@@ -1198,7 +1318,7 @@ document.addEventListener('click', async (e) => {
       banner.style.opacity = '0';
       setTimeout(() => { banner.style.display = 'none'; banner.style.opacity = '1'; }, 400);
     }
-    showToast('Closed extra Tab Out tabs');
+    showToast('已关闭多余的标签页');
     return;
   }
 
@@ -1260,7 +1380,34 @@ document.addEventListener('click', async (e) => {
     const statTabs = document.getElementById('statTabs');
     if (statTabs) statTabs.textContent = openTabs.length;
 
-    showToast('Tab closed');
+    showToast('标签页已关闭');
+    return;
+  }
+
+  // ---- Close duplicates for this URL, keep 1 ----
+  if (action === 'close-dupes-this-url') {
+    e.stopPropagation();
+    const tabUrl = actionEl.dataset.tabUrl;
+    if (!tabUrl) return;
+
+    await closeDuplicateTabs([tabUrl], true);
+    playCloseSound();
+    showToast('已保留 1 个，关闭其余重复');
+    await renderDashboard();
+    return;
+  }
+
+  // ---- Close ALL tabs with this URL ----
+  if (action === 'close-all-this-url') {
+    e.stopPropagation();
+    const tabUrl = actionEl.dataset.tabUrl;
+    const count  = parseInt(actionEl.dataset.tabCount) || 1;
+    if (!tabUrl) return;
+
+    await closeDuplicateTabs([tabUrl], false);
+    playCloseSound();
+    showToast(`已关闭全部 ${count} 个`);
+    await renderDashboard();
     return;
   }
 
@@ -1276,7 +1423,7 @@ document.addEventListener('click', async (e) => {
       await saveTabForLater({ url: tabUrl, title: tabTitle });
     } catch (err) {
       console.error('[tab-out] Failed to save tab:', err);
-      showToast('Failed to save tab');
+      showToast('保存失败');
       return;
     }
 
@@ -1295,7 +1442,7 @@ document.addEventListener('click', async (e) => {
       setTimeout(() => chip.remove(), 200);
     }
 
-    showToast('Saved for later');
+    showToast('已收藏');
     await renderDeferredColumn();
     return;
   }
@@ -1340,6 +1487,38 @@ document.addEventListener('click', async (e) => {
     return;
   }
 
+  // ---- Restore a saved tab (reopen it and remove from saved list) ----
+  if (action === 'restore-deferred') {
+    const id = actionEl.dataset.deferredId;
+    const url = actionEl.dataset.deferredUrl;
+    if (!id || !url) return;
+
+    // Open the URL in a new tab
+    try {
+      await chrome.tabs.create({ url });
+    } catch (err) {
+      console.error('[tab-out] Failed to reopen tab:', err);
+      showToast('重新打开失败');
+      return;
+    }
+
+    // Remove from saved list (dismiss it)
+    await dismissSavedTab(id);
+
+    // Animate out
+    const item = actionEl.closest('.deferred-item');
+    if (item) {
+      item.classList.add('removing');
+      setTimeout(() => {
+        item.remove();
+        renderDeferredColumn();
+      }, 300);
+    }
+
+    showToast('已重新打开');
+    return;
+  }
+
   // ---- Close all tabs in a domain group ----
   if (action === 'close-domain-tabs') {
     const domainId = actionEl.dataset.domainId;
@@ -1369,7 +1548,7 @@ document.addEventListener('click', async (e) => {
     if (idx !== -1) domainGroups.splice(idx, 1);
 
     const groupLabel = group.domain === '__landing-pages__' ? 'Homepages' : (group.label || friendlyDomain(group.domain));
-    showToast(`Closed ${urls.length} tab${urls.length !== 1 ? 's' : ''} from ${groupLabel}`);
+    showToast(`已关闭 ${groupLabel} 的 ${urls.length} 个标签页`);
 
     const statTabs = document.getElementById('statTabs');
     if (statTabs) statTabs.textContent = openTabs.length;
@@ -1398,7 +1577,7 @@ document.addEventListener('click', async (e) => {
         setTimeout(() => b.remove(), 200);
       });
       card.querySelectorAll('.open-tabs-badge').forEach(badge => {
-        if (badge.textContent.includes('duplicate')) {
+        if (badge.textContent.includes('重复')) {
           badge.style.transition = 'opacity 0.2s';
           badge.style.opacity    = '0';
           setTimeout(() => badge.remove(), 200);
@@ -1408,7 +1587,7 @@ document.addEventListener('click', async (e) => {
       card.classList.add('has-neutral-bar');
     }
 
-    showToast('Closed duplicates, kept one copy each');
+    showToast('已关闭重复标签页，保留了一份');
     return;
   }
 
@@ -1428,7 +1607,7 @@ document.addEventListener('click', async (e) => {
       animateCardOut(c);
     });
 
-    showToast('All tabs closed. Fresh start.');
+    showToast('所有标签页已关闭，焕然一新！');
     return;
   }
 });
@@ -1469,9 +1648,349 @@ document.addEventListener('input', async (e) => {
     );
 
     archiveList.innerHTML = results.map(item => renderArchiveItem(item)).join('')
-      || '<div style="font-size:12px;color:var(--muted);padding:8px 0">No results</div>';
+      || '<div style="font-size:12px;color:var(--muted);padding:8px 0">没有结果</div>';
   } catch (err) {
     console.warn('[tab-out] Archive search failed:', err);
+  }
+});
+
+
+/* ----------------------------------------------------------------
+   FILTER TAGS — One-click category filters
+   ---------------------------------------------------------------- */
+
+/**
+ * renderFilterTags()
+ *
+ * Generates clickable tag buttons for each domain group.
+ * Shows custom name (or friendly name) for each group.
+ */
+function renderFilterTags() {
+  const container = document.getElementById('filterTags');
+  if (!container || domainGroups.length === 0) {
+    if (container) container.style.display = 'none';
+    return;
+  }
+
+  // Only show filter tags when there are 2+ groups (filtering 1 group is pointless)
+  if (domainGroups.length < 2) {
+    container.style.display = 'none';
+    return;
+  }
+
+  const tags = [`<button class="filter-tag active" data-filter="all">全部 <span class="filter-count">${domainGroups.length}</span></button>`];
+
+  for (const group of domainGroups) {
+    const name = getDisplayName(group);
+    const count = group.tabs.length;
+    const stableId = 'domain-' + group.domain.replace(/[^a-z0-9]/g, '-');
+    const isCustom = !!domainNamesCache[group.domain];
+    tags.push(`<button class="filter-tag${isCustom ? ' filter-tag-custom' : ''}" data-filter="${stableId}" title="${group.domain}">${name} <span class="filter-count">${count}</span></button>`);
+  }
+
+  container.innerHTML = tags.join('');
+  container.style.display = 'flex';
+}
+
+/** Current active filter: 'all' or a domain stable ID */
+let activeFilter = 'all';
+
+/** Current search query (empty string = no filter) */
+let currentSearchQuery = '';
+
+
+/* ----------------------------------------------------------------
+   SEARCH — Real-time filtering across tabs
+   ---------------------------------------------------------------- */
+
+/**
+ * applySearchFilter()
+ *
+ * Applies both the search query and the active filter tag.
+ * Hides domain cards that don't match.
+ * Highlights matching text in visible cards.
+ */
+function applySearchFilter() {
+  const cards = document.querySelectorAll('#openTabsMissions .mission-card.domain-card');
+  const query = currentSearchQuery.toLowerCase().trim();
+
+  // First, clear all existing highlights
+  cards.forEach(card => {
+    card.querySelectorAll('mark.search-highlight').forEach(mark => {
+      const parent = mark.parentNode;
+      parent.replaceChild(document.createTextNode(mark.textContent), mark);
+      parent.normalize();
+    });
+  });
+
+  let visibleCount = 0;
+
+  cards.forEach(card => {
+    const domain = card.dataset.domain || '';
+    const group = domainGroups.find(g =>
+      'domain-' + g.domain.replace(/[^a-z0-9]/g, '-') === card.dataset.domainId
+    );
+
+    let matchesFilter = true;
+    let matchesSearch = true;
+
+    // Check filter tag
+    if (activeFilter !== 'all') {
+      matchesFilter = card.dataset.domainId === activeFilter;
+    }
+
+    // Check search query
+    if (query.length > 0 && group) {
+      const displayName = getDisplayName(group).toLowerCase();
+      const subtitle = getDisplaySubtitle(group).toLowerCase();
+      const domainLower = group.domain.toLowerCase();
+      const tabTexts = group.tabs.map(t =>
+        (t.title || '').toLowerCase() + ' ' + (t.url || '').toLowerCase()
+      ).join(' ');
+
+      const searchable = `${displayName} ${subtitle} ${domainLower} ${tabTexts}`;
+      matchesSearch = searchable.includes(query);
+    }
+
+    const visible = matchesFilter && matchesSearch;
+    card.style.display = visible ? '' : 'none';
+    if (visible) visibleCount++;
+
+    // Highlight matching text in visible cards
+    if (visible && query.length > 0) {
+      highlightInCard(card, query);
+    }
+  });
+
+  // Show empty state if no results
+  const missionsEl = document.getElementById('openTabsMissions');
+  const existingEmpty = missionsEl.querySelector('.search-empty-state');
+
+  if (visibleCount === 0 && (query.length > 0 || activeFilter !== 'all')) {
+    if (!existingEmpty) {
+      const emptyMsg = query.length > 0
+        ? `没有找到匹配 "<strong>${escapeHtml(currentSearchQuery)}</strong>" 的标签页`
+        : '该分类下没有标签页';
+      missionsEl.insertAdjacentHTML('beforeend', `
+        <div class="search-empty-state">
+          <div class="search-empty-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" />
+            </svg>
+          </div>
+          <div>${emptyMsg}</div>
+        </div>
+      `);
+    }
+  } else if (existingEmpty) {
+    existingEmpty.remove();
+  }
+}
+
+/**
+ * highlightInCard(card, query)
+ *
+ * Wraps matching text in <mark> tags within a card's title elements.
+ */
+function highlightInCard(card, query) {
+  const elements = card.querySelectorAll('.mission-name, .chip-text, .deferred-title');
+  elements.forEach(el => {
+    const walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT, null, false);
+    const textNodes = [];
+    while (walker.nextNode()) textNodes.push(walker.currentNode);
+
+    textNodes.forEach(node => {
+      const text = node.textContent;
+      const lowerText = text.toLowerCase();
+      const idx = lowerText.indexOf(query);
+      if (idx === -1) return;
+
+      const before = text.slice(0, idx);
+      const match = text.slice(idx, idx + query.length);
+      const after = text.slice(idx + query.length);
+
+      const frag = document.createDocumentFragment();
+      if (before) frag.appendChild(document.createTextNode(before));
+      const mark = document.createElement('mark');
+      mark.className = 'search-highlight';
+      mark.textContent = match;
+      frag.appendChild(mark);
+      if (after) frag.appendChild(document.createTextNode(after));
+
+      node.parentNode.replaceChild(frag, node);
+    });
+  });
+}
+
+function escapeHtml(str) {
+  const div = document.createElement('div');
+  div.textContent = str;
+  return div.innerHTML;
+}
+
+
+/* ----------------------------------------------------------------
+   EDIT DOMAIN NAME — Inline editing for custom names
+   ---------------------------------------------------------------- */
+
+/**
+ * startEditingDomainName(domain, button)
+ *
+ * Replaces the domain name display with an inline input for editing.
+ */
+function startEditingDomainName(domain, button) {
+  const card = button.closest('.mission-card');
+  if (!card) return;
+
+  const nameDisplay = card.querySelector('.domain-name-display');
+  if (!nameDisplay) return;
+
+  const currentName = domainNamesCache[domain] || '';
+
+  // Replace the display with an input
+  nameDisplay.style.display = 'none';
+  button.style.display = 'none';
+
+  const editContainer = document.createElement('div');
+  editContainer.className = 'domain-name-edit-container';
+  editContainer.innerHTML = `
+    <input type="text" class="domain-name-input" value="${escapeHtml(currentName)}" placeholder="输入分类名称..." maxlength="20">
+    <button class="domain-name-save" title="保存">
+      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" /></svg>
+    </button>
+    <button class="domain-name-cancel" title="取消">
+      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" /></svg>
+    </button>
+  `;
+
+  nameDisplay.parentNode.insertBefore(editContainer, nameDisplay.nextSibling);
+
+  const input = editContainer.querySelector('.domain-name-input');
+  input.focus();
+  input.select();
+
+  // Save handler
+  const save = async () => {
+    const newName = input.value.trim();
+    await setDomainName(domain, newName);
+    editContainer.remove();
+    await renderDashboard();
+    showToast(newName ? `已命名为「${newName}」` : '已恢复默认名称');
+  };
+
+  // Cancel handler
+  const cancel = () => {
+    editContainer.remove();
+    nameDisplay.style.display = '';
+    button.style.display = '';
+  };
+
+  editContainer.querySelector('.domain-name-save').addEventListener('click', save);
+  editContainer.querySelector('.domain-name-cancel').addEventListener('click', cancel);
+
+  input.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') { e.preventDefault(); save(); }
+    if (e.key === 'Escape') { e.preventDefault(); cancel(); }
+  });
+
+  // Save on blur (with small delay to allow button clicks)
+  input.addEventListener('blur', () => {
+    setTimeout(() => {
+      if (editContainer.parentNode) save();
+    }, 150);
+  });
+}
+
+
+/* ----------------------------------------------------------------
+   SEARCH INPUT — real-time filtering as user types
+   ---------------------------------------------------------------- */
+
+const searchInput = document.getElementById('searchInput');
+const searchClear = document.getElementById('searchClear');
+const searchShortcut = document.getElementById('searchShortcut');
+
+// Search input handler — debounce for performance
+let searchTimeout;
+if (searchInput) {
+  searchInput.addEventListener('input', () => {
+    clearTimeout(searchTimeout);
+    searchTimeout = setTimeout(() => {
+      currentSearchQuery = searchInput.value;
+
+      // Show/hide clear button
+      if (searchClear) searchClear.style.display = currentSearchQuery ? 'flex' : 'none';
+      if (searchShortcut) searchShortcut.style.display = currentSearchQuery ? 'none' : '';
+
+      applySearchFilter();
+    }, 150); // 150ms debounce
+  });
+
+  // Clear search button
+  if (searchClear) {
+    searchClear.addEventListener('click', () => {
+      searchInput.value = '';
+      currentSearchQuery = '';
+      searchClear.style.display = 'none';
+      searchShortcut.style.display = '';
+      searchInput.focus();
+      applySearchFilter();
+    });
+  }
+}
+
+
+/* ----------------------------------------------------------------
+   FILTER TAG CLICKS — one-click category filtering
+   ---------------------------------------------------------------- */
+
+document.addEventListener('click', (e) => {
+  const tag = e.target.closest('.filter-tag');
+  if (!tag) return;
+
+  const filter = tag.dataset.filter;
+  if (!filter) return;
+
+  // Update active state
+  document.querySelectorAll('.filter-tag').forEach(t => t.classList.remove('active'));
+  tag.classList.add('active');
+
+  activeFilter = filter;
+  applySearchFilter();
+});
+
+
+/* ----------------------------------------------------------------
+   KEYBOARD SHORTCUTS
+   Cmd/Ctrl+K → focus search input
+   Escape → clear search or blur input
+   ---------------------------------------------------------------- */
+
+document.addEventListener('keydown', (e) => {
+  // Cmd/Ctrl + K → focus search
+  if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+    e.preventDefault();
+    if (searchInput) {
+      searchInput.focus();
+      searchInput.select();
+    }
+    return;
+  }
+
+  // Escape → clear search or blur
+  if (e.key === 'Escape') {
+    if (document.activeElement === searchInput) {
+      if (currentSearchQuery) {
+        searchInput.value = '';
+        currentSearchQuery = '';
+        if (searchClear) searchClear.style.display = 'none';
+        if (searchShortcut) searchShortcut.style.display = '';
+        applySearchFilter();
+      } else {
+        searchInput.blur();
+      }
+    }
+    return;
   }
 });
 
